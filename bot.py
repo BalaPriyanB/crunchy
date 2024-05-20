@@ -5,7 +5,7 @@ import asyncio
 import subprocess
 import time
 import math
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from telethon.tl.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -101,7 +101,9 @@ async def handle_rip_command(event):
             [InlineKeyboardButton("All", callback_data="all")]
         ])
 
-        message = await event.respond("Please select the language:", reply_markup=keyboard)
+        message = await event.respond("Please select the language:")
+        await message.edit(reply_markup=keyboard)
+
 
         language_names = {
             "ar-ME": "Arabic (ME)", "ar-SA": "Arabic (SA)", "ca-ES": "Catalan",
