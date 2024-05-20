@@ -38,7 +38,7 @@ async def progress_for_pyrogram(current, total, client, message, start_time):
 
 async def execute_crunchy_command(crunchyroll_link, message, language_option):
     try:
-        command = ['./crunchy-cli-v3.2.5-linux-x86_64',
+        command = ['./crunchy-cli-v3.6.3-linux-x86_64',
                    '--anonymous', 'archive', '-r', '1280x720', '-a', language_option,
                    crunchyroll_link]
         process = await asyncio.create_subprocess_exec(*command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
