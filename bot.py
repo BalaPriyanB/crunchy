@@ -1,18 +1,18 @@
 import logging
-from telethon import TelegramClient, events
+from pyrogram import Client, filters
 from config import Config
 import asyncio
 import subprocess
 import time
 import math
-from telethon.tl.types import InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-client = TelegramClient('bot_session', Config.TELEGRAM_API_ID, Config.TELEGRAM_API_HASH).start(bot_token=Config.TELEGRAM_BOT_TOKEN)
+app = Client('bot_session', api_id=Config.TELEGRAM_API_ID, api_hash=Config.TELEGRAM_API_HASH, bot_token=Config.TELEGRAM_BOT_TOKEN)
 
-async def progress_for_pyrogram(current, total, client, message, start_time):
+async def progress_for_pyrogram(current, total, message, start_time):
     try:
         now = time.time()
         diff = now - start_time
@@ -32,7 +32,7 @@ async def progress_for_pyrogram(current, total, client, message, start_time):
                                f"{progress} {percentage:.2f}%\n" \
                                f"Speed: {humanbytes(speed)}/s\n" \
                                f"ETA: {estimated_total_time_str}"
-            await client.edit_message_text(chat_id=message.chat.id, message_id=message.id, text=progress_message)
+            await message.edit_text(progress_message)
     except Exception as e:
         logger.error(f'Error in progress_for_pyrogram: {e}')
 
@@ -44,13 +44,13 @@ async def execute_crunchy_command(crunchyroll_link, message, language_option):
         process = await asyncio.create_subprocess_exec(*command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         start_time = time.time()
-        progress_message = await client.send_message(message.chat_id, "Ripping in progress...")
+        progress_message = await message.reply("Ripping in progress...")
 
         while True:
             data = await process.stdout.read(1024)
             if not data:
                 break
-            await progress_for_pyrogram(process.stdout.tell(), 1000, client, progress_message, start_time)
+            await progress_for_pyrogram(process.stdout.tell(), 1000, message, start_time)
 
         stdout, stderr = await process.communicate()
 
@@ -64,10 +64,10 @@ async def execute_crunchy_command(crunchyroll_link, message, language_option):
         return None
 
 
-@client.on(events.NewMessage(pattern='/rip'))
-async def handle_rip_command(event):
+@app.on_message(filters.command("rip"))
+async def handle_rip_command(client, message):
     try:
-        crunchyroll_link = event.raw_text.split('/rip', 1)[1].strip()
+        crunchyroll_link = message.text.split('/rip', 1)[1].strip()
         logger.info(f'Received rip command for {crunchyroll_link}')
 
         keyboard = InlineKeyboardMarkup([
@@ -101,8 +101,7 @@ async def handle_rip_command(event):
             [InlineKeyboardButton("All", callback_data="all")]
         ])
 
-        message = await event.respond("Please select the language:")
-        await message.edit(reply_markup=keyboard)
+        message = await message.reply("Please select the language:", reply_markup=keyboard)
 
 
         language_names = {
@@ -118,7 +117,7 @@ async def handle_rip_command(event):
             "all": "All"
         }
 
-        async def callback_handler(event):
+        async def callback_handler(_, event):
             nonlocal message
             selected_language = event.data.decode("utf-8")
             logger.info(f'User selected language: {selected_language}')
@@ -129,22 +128,20 @@ async def handle_rip_command(event):
             else:
                 language_option = f"-a {selected_language}"
 
-            await event.respond("Ripping process started...")
-            ripped_video = await execute_crunchy_command(crunchyroll_link, event.message, language_option)
+            await event.reply("Ripping process started...")
+            ripped_video = await execute_crunchy_command(crunchyroll_link, event, language_option)
 
             if ripped_video:
-                await client.send_file(event.chat_id, ripped_video, caption="Here is your ripped video!")
-                logger.info(f'Successfully uploaded video to {event.chat_id}')
+                await app.send_video(event.chat.id, ripped_video, caption="Here is your ripped video!")
+                logger.info(f'Successfully uploaded video to {event.chat.id}')
             else:
-                await event.respond("Ripping process failed. Please try again later.")
+                await event.reply("Ripping process failed. Please try again later.")
 
-        client.on(events.CallbackQuery(data=re.compile(b".*")), callback_handler)
+        app.on_callback_query(callback_handler)
 
     except Exception as e:
-        await event.respond(f'Error: {str(e)}')
+        await message.reply(f'Error: {str(e)}')
         logger.exception(f'Error: {str(e)}')
-
-
 
 def humanbytes(size):
     if not size:
@@ -167,4 +164,4 @@ def TimeFormatter(seconds: float) -> str:
                ((str(seconds) + "s, ") if seconds else "")
     return time_str[:-2]
 
-client.run_until_disconnected()
+app.run()
