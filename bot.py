@@ -66,7 +66,11 @@ async def execute_crunchy_command(crunchyroll_link, message, language_option):
 @app.on_message(filters.command("rip"))
 async def handle_rip_command(client, message):
     try:
-        crunchyroll_link = message.text.split('/rip', 1)[1].strip()
+        if len(message.command) < 2:
+            await message.reply("Please provide a Crunchyroll link after the /rip command.")
+            return
+        
+        crunchyroll_link = message.command[1]
         logger.info(f'Received rip command for {crunchyroll_link}')
 
         keyboard = InlineKeyboardMarkup([
@@ -114,10 +118,7 @@ async def callback_handler(client, callback_query):
         logger.info(f'User selected language: {selected_language}')
 
         await message.delete()
-        if selected_language == "all":
-            language_option = ""
-        else:
-            language_option = selected_language
+        language_option = "" if selected_language == "all" else selected_language
 
         await callback_query.message.reply("Ripping process started...")
         crunchyroll_link = callback_query.message.reply_to_message.text.split('/rip', 1)[1].strip()
