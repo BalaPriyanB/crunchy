@@ -50,7 +50,7 @@ async def execute_crunchy_command(crunchyroll_link, message, language_option):
             data = await process.stdout.read(1024)
             if not data:
                 break
-            await progress_for_pyrogram(process.stdout.tell(), 1000, message, start_time)
+            await progress_for_pyrogram(process.stdout.tell(), 1000, progress_message, start_time)
 
         stdout, stderr = await process.communicate()
 
@@ -62,7 +62,6 @@ async def execute_crunchy_command(crunchyroll_link, message, language_option):
     except Exception as e:
         logger.exception(f'Error executing command: {str(e)}')
         return None
-
 
 @app.on_message(filters.command("rip"))
 async def handle_rip_command(client, message):
@@ -101,46 +100,37 @@ async def handle_rip_command(client, message):
             [InlineKeyboardButton("All", callback_data="all")]
         ])
 
-        message = await message.reply("Please select the language:", reply_markup=keyboard)
-
-
-        language_names = {
-            "ar-ME": "Arabic (ME)", "ar-SA": "Arabic (SA)", "ca-ES": "Catalan",
-            "de-DE": "German", "en-IN": "English (IN)", "en-US": "English (US)",
-            "es-419": "Spanish (419)", "es-ES": "Spanish (ES)", "es-LA": "Spanish (LA)",
-            "fr-FR": "French", "hi-IN": "Hindi (IN)", "id-ID": "Indonesian",
-            "it-IT": "Italian", "ja-JP": "Japanese", "ko-KR": "Korean",
-            "ms-MY": "Malay", "pl-PL": "Polish", "pt-BR": "Portuguese (BR)",
-            "pt-PT": "Portuguese (PT)", "ru-RU": "Russian", "ta-IN": "Tamil (IN)",
-            "te-IN": "Telugu (IN)", "th-TH": "Thai", "tr-TR": "Turkish",
-            "vi-VN": "Vietnamese", "zh-CN": "Chinese (CN)", "zh-TW": "Chinese (TW)",
-            "all": "All"
-        }
-
-        async def callback_handler(_, event):
-            nonlocal message
-            selected_language = event.data.decode("utf-8")
-            logger.info(f'User selected language: {selected_language}')
-
-            await message.delete()
-            if selected_language == "all":
-                language_option = ""
-            else:
-                language_option = f"-a {selected_language}"
-
-            await event.reply("Ripping process started...")
-            ripped_video = await execute_crunchy_command(crunchyroll_link, event, language_option)
-
-            if ripped_video:
-                await app.send_video(event.chat.id, ripped_video, caption="Here is your ripped video!")
-                logger.info(f'Successfully uploaded video to {event.chat.id}')
-            else:
-                await event.reply("Ripping process failed. Please try again later.")
-
-        app.on_callback_query(callback_handler)
+        await message.reply("Please select the language:", reply_markup=keyboard)
 
     except Exception as e:
         await message.reply(f'Error: {str(e)}')
+        logger.exception(f'Error: {str(e)}')
+
+@app.on_callback_query()
+async def callback_handler(client, callback_query):
+    try:
+        message = callback_query.message
+        selected_language = callback_query.data
+        logger.info(f'User selected language: {selected_language}')
+
+        await message.delete()
+        if selected_language == "all":
+            language_option = ""
+        else:
+            language_option = selected_language
+
+        await callback_query.message.reply("Ripping process started...")
+        crunchyroll_link = callback_query.message.reply_to_message.text.split('/rip', 1)[1].strip()
+        ripped_video = await execute_crunchy_command(crunchyroll_link, callback_query.message, language_option)
+
+        if ripped_video:
+            await app.send_video(callback_query.message.chat.id, ripped_video, caption="Here is your ripped video!")
+            logger.info(f'Successfully uploaded video to {callback_query.message.chat.id}')
+        else:
+            await callback_query.message.reply("Ripping process failed. Please try again later.")
+
+    except Exception as e:
+        await callback_query.message.reply(f'Error: {str(e)}')
         logger.exception(f'Error: {str(e)}')
 
 def humanbytes(size):
