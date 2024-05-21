@@ -5,12 +5,16 @@ import asyncio
 import subprocess
 import time
 import math
+import uuid
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 app = Client('bot_session', api_id=Config.TELEGRAM_API_ID, api_hash=Config.TELEGRAM_API_HASH, bot_token=Config.TELEGRAM_BOT_TOKEN)
+
+# Dictionary to store links with unique IDs
+link_store = {}
 
 async def progress_for_pyrogram(current, total, message, start_time):
     try:
@@ -69,35 +73,39 @@ async def handle_rip_command(client, message):
         crunchyroll_link = message.text.split('/rip', 1)[1].strip()
         logger.info(f'Received rip command for {crunchyroll_link}')
 
+        # Generate a unique ID for the link and store it
+        unique_id = str(uuid.uuid4())
+        link_store[unique_id] = crunchyroll_link
+
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("Arabic (ME)", callback_data=f"ar-ME|{crunchyroll_link}"),
-             InlineKeyboardButton("Arabic (SA)", callback_data=f"ar-SA|{crunchyroll_link}"),
-             InlineKeyboardButton("Catalan", callback_data=f"ca-ES|{crunchyroll_link}")],
-            [InlineKeyboardButton("German", callback_data=f"de-DE|{crunchyroll_link}"),
-             InlineKeyboardButton("English (IN)", callback_data=f"en-IN|{crunchyroll_link}"),
-             InlineKeyboardButton("English (US)", callback_data=f"en-US|{crunchyroll_link}")],
-            [InlineKeyboardButton("Spanish (419)", callback_data=f"es-419|{crunchyroll_link}"),
-             InlineKeyboardButton("Spanish (ES)", callback_data=f"es-ES|{crunchyroll_link}"),
-             InlineKeyboardButton("Spanish (LA)", callback_data=f"es-LA|{crunchyroll_link}")],
-            [InlineKeyboardButton("French", callback_data=f"fr-FR|{crunchyroll_link}"),
-             InlineKeyboardButton("Hindi (IN)", callback_data=f"hi-IN|{crunchyroll_link}"),
-             InlineKeyboardButton("Indonesian", callback_data=f"id-ID|{crunchyroll_link}")],
-            [InlineKeyboardButton("Italian", callback_data=f"it-IT|{crunchyroll_link}"),
-             InlineKeyboardButton("Japanese", callback_data=f"ja-JP|{crunchyroll_link}"),
-             InlineKeyboardButton("Korean", callback_data=f"ko-KR|{crunchyroll_link}")],
-            [InlineKeyboardButton("Malay", callback_data=f"ms-MY|{crunchyroll_link}"),
-             InlineKeyboardButton("Polish", callback_data=f"pl-PL|{crunchyroll_link}"),
-             InlineKeyboardButton("Portuguese (BR)", callback_data=f"pt-BR|{crunchyroll_link}")],
-            [InlineKeyboardButton("Portuguese (PT)", callback_data=f"pt-PT|{crunchyroll_link}"),
-             InlineKeyboardButton("Russian", callback_data=f"ru-RU|{crunchyroll_link}"),
-             InlineKeyboardButton("Tamil (IN)", callback_data=f"ta-IN|{crunchyroll_link}")],
-            [InlineKeyboardButton("Telugu (IN)", callback_data=f"te-IN|{crunchyroll_link}"),
-             InlineKeyboardButton("Thai", callback_data=f"th-TH|{crunchyroll_link}"),
-             InlineKeyboardButton("Turkish", callback_data=f"tr-TR|{crunchyroll_link}")],
-            [InlineKeyboardButton("Vietnamese", callback_data=f"vi-VN|{crunchyroll_link}"),
-             InlineKeyboardButton("Chinese (CN)", callback_data=f"zh-CN|{crunchyroll_link}"),
-             InlineKeyboardButton("Chinese (TW)", callback_data=f"zh-TW|{crunchyroll_link}")],
-            [InlineKeyboardButton("All", callback_data=f"all|{crunchyroll_link}")]
+            [InlineKeyboardButton("Arabic (ME)", callback_data=f"ar-ME|{unique_id}"),
+             InlineKeyboardButton("Arabic (SA)", callback_data=f"ar-SA|{unique_id}"),
+             InlineKeyboardButton("Catalan", callback_data=f"ca-ES|{unique_id}")],
+            [InlineKeyboardButton("German", callback_data=f"de-DE|{unique_id}"),
+             InlineKeyboardButton("English (IN)", callback_data=f"en-IN|{unique_id}"),
+             InlineKeyboardButton("English (US)", callback_data=f"en-US|{unique_id}")],
+            [InlineKeyboardButton("Spanish (419)", callback_data=f"es-419|{unique_id}"),
+             InlineKeyboardButton("Spanish (ES)", callback_data=f"es-ES|{unique_id}"),
+             InlineKeyboardButton("Spanish (LA)", callback_data=f"es-LA|{unique_id}")],
+            [InlineKeyboardButton("French", callback_data=f"fr-FR|{unique_id}"),
+             InlineKeyboardButton("Hindi (IN)", callback_data=f"hi-IN|{unique_id}"),
+             InlineKeyboardButton("Indonesian", callback_data=f"id-ID|{unique_id}")],
+            [InlineKeyboardButton("Italian", callback_data=f"it-IT|{unique_id}"),
+             InlineKeyboardButton("Japanese", callback_data=f"ja-JP|{unique_id}"),
+             InlineKeyboardButton("Korean", callback_data=f"ko-KR|{unique_id}")],
+            [InlineKeyboardButton("Malay", callback_data=f"ms-MY|{unique_id}"),
+             InlineKeyboardButton("Polish", callback_data=f"pl-PL|{unique_id}"),
+             InlineKeyboardButton("Portuguese (BR)", callback_data=f"pt-BR|{unique_id}")],
+            [InlineKeyboardButton("Portuguese (PT)", callback_data=f"pt-PT|{unique_id}"),
+             InlineKeyboardButton("Russian", callback_data=f"ru-RU|{unique_id}"),
+             InlineKeyboardButton("Tamil (IN)", callback_data=f"ta-IN|{unique_id}")],
+            [InlineKeyboardButton("Telugu (IN)", callback_data=f"te-IN|{unique_id}"),
+             InlineKeyboardButton("Thai", callback_data=f"th-TH|{unique_id}"),
+             InlineKeyboardButton("Turkish", callback_data=f"tr-TR|{unique_id}")],
+            [InlineKeyboardButton("Vietnamese", callback_data=f"vi-VN|{unique_id}"),
+             InlineKeyboardButton("Chinese (CN)", callback_data=f"zh-CN|{unique_id}"),
+             InlineKeyboardButton("Chinese (TW)", callback_data=f"zh-TW|{unique_id}")],
+            [InlineKeyboardButton("All", callback_data=f"all|{unique_id}")]
         ])
 
         await message.reply("Please select the language:", reply_markup=keyboard)
@@ -111,7 +119,13 @@ async def callback_handler(client, callback_query):
     try:
         message = callback_query.message
         callback_data = callback_query.data
-        selected_language, crunchyroll_link = callback_data.split('|')
+        selected_language, unique_id = callback_data.split('|')
+        crunchyroll_link = link_store.get(unique_id)
+
+        if not crunchyroll_link:
+            await callback_query.message.reply("Error: Link not found.")
+            return
+
         logger.info(f'User selected language: {selected_language} for link: {crunchyroll_link}')
 
         await message.delete()
