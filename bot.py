@@ -66,42 +66,38 @@ async def execute_crunchy_command(crunchyroll_link, message, language_option):
 @app.on_message(filters.command("rip"))
 async def handle_rip_command(client, message):
     try:
-        if len(message.command) < 2:
-            await message.reply("Please provide a Crunchyroll link after the /rip command.")
-            return
-        
-        crunchyroll_link = message.command[1]
+        crunchyroll_link = message.text.split('/rip', 1)[1].strip()
         logger.info(f'Received rip command for {crunchyroll_link}')
 
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("Arabic (ME)", callback_data="ar-ME"),
-             InlineKeyboardButton("Arabic (SA)", callback_data="ar-SA"),
-             InlineKeyboardButton("Catalan", callback_data="ca-ES")],
-            [InlineKeyboardButton("German", callback_data="de-DE"),
-             InlineKeyboardButton("English (IN)", callback_data="en-IN"),
-             InlineKeyboardButton("English (US)", callback_data="en-US")],
-            [InlineKeyboardButton("Spanish (419)", callback_data="es-419"),
-             InlineKeyboardButton("Spanish (ES)", callback_data="es-ES"),
-             InlineKeyboardButton("Spanish (LA)", callback_data="es-LA")],
-            [InlineKeyboardButton("French", callback_data="fr-FR"),
-             InlineKeyboardButton("Hindi (IN)", callback_data="hi-IN"),
-             InlineKeyboardButton("Indonesian", callback_data="id-ID")],
-            [InlineKeyboardButton("Italian", callback_data="it-IT"),
-             InlineKeyboardButton("Japanese", callback_data="ja-JP"),
-             InlineKeyboardButton("Korean", callback_data="ko-KR")],
-            [InlineKeyboardButton("Malay", callback_data="ms-MY"),
-             InlineKeyboardButton("Polish", callback_data="pl-PL"),
-             InlineKeyboardButton("Portuguese (BR)", callback_data="pt-BR")],
-            [InlineKeyboardButton("Portuguese (PT)", callback_data="pt-PT"),
-             InlineKeyboardButton("Russian", callback_data="ru-RU"),
-             InlineKeyboardButton("Tamil (IN)", callback_data="ta-IN")],
-            [InlineKeyboardButton("Telugu (IN)", callback_data="te-IN"),
-             InlineKeyboardButton("Thai", callback_data="th-TH"),
-             InlineKeyboardButton("Turkish", callback_data="tr-TR")],
-            [InlineKeyboardButton("Vietnamese", callback_data="vi-VN"),
-             InlineKeyboardButton("Chinese (CN)", callback_data="zh-CN"),
-             InlineKeyboardButton("Chinese (TW)", callback_data="zh-TW")],
-            [InlineKeyboardButton("All", callback_data="all")]
+            [InlineKeyboardButton("Arabic (ME)", callback_data=f"ar-ME|{crunchyroll_link}"),
+             InlineKeyboardButton("Arabic (SA)", callback_data=f"ar-SA|{crunchyroll_link}"),
+             InlineKeyboardButton("Catalan", callback_data=f"ca-ES|{crunchyroll_link}")],
+            [InlineKeyboardButton("German", callback_data=f"de-DE|{crunchyroll_link}"),
+             InlineKeyboardButton("English (IN)", callback_data=f"en-IN|{crunchyroll_link}"),
+             InlineKeyboardButton("English (US)", callback_data=f"en-US|{crunchyroll_link}")],
+            [InlineKeyboardButton("Spanish (419)", callback_data=f"es-419|{crunchyroll_link}"),
+             InlineKeyboardButton("Spanish (ES)", callback_data=f"es-ES|{crunchyroll_link}"),
+             InlineKeyboardButton("Spanish (LA)", callback_data=f"es-LA|{crunchyroll_link}")],
+            [InlineKeyboardButton("French", callback_data=f"fr-FR|{crunchyroll_link}"),
+             InlineKeyboardButton("Hindi (IN)", callback_data=f"hi-IN|{crunchyroll_link}"),
+             InlineKeyboardButton("Indonesian", callback_data=f"id-ID|{crunchyroll_link}")],
+            [InlineKeyboardButton("Italian", callback_data=f"it-IT|{crunchyroll_link}"),
+             InlineKeyboardButton("Japanese", callback_data=f"ja-JP|{crunchyroll_link}"),
+             InlineKeyboardButton("Korean", callback_data=f"ko-KR|{crunchyroll_link}")],
+            [InlineKeyboardButton("Malay", callback_data=f"ms-MY|{crunchyroll_link}"),
+             InlineKeyboardButton("Polish", callback_data=f"pl-PL|{crunchyroll_link}"),
+             InlineKeyboardButton("Portuguese (BR)", callback_data=f"pt-BR|{crunchyroll_link}")],
+            [InlineKeyboardButton("Portuguese (PT)", callback_data=f"pt-PT|{crunchyroll_link}"),
+             InlineKeyboardButton("Russian", callback_data=f"ru-RU|{crunchyroll_link}"),
+             InlineKeyboardButton("Tamil (IN)", callback_data=f"ta-IN|{crunchyroll_link}")],
+            [InlineKeyboardButton("Telugu (IN)", callback_data=f"te-IN|{crunchyroll_link}"),
+             InlineKeyboardButton("Thai", callback_data=f"th-TH|{crunchyroll_link}"),
+             InlineKeyboardButton("Turkish", callback_data=f"tr-TR|{crunchyroll_link}")],
+            [InlineKeyboardButton("Vietnamese", callback_data=f"vi-VN|{crunchyroll_link}"),
+             InlineKeyboardButton("Chinese (CN)", callback_data=f"zh-CN|{crunchyroll_link}"),
+             InlineKeyboardButton("Chinese (TW)", callback_data=f"zh-TW|{crunchyroll_link}")],
+            [InlineKeyboardButton("All", callback_data=f"all|{crunchyroll_link}")]
         ])
 
         await message.reply("Please select the language:", reply_markup=keyboard)
@@ -114,14 +110,18 @@ async def handle_rip_command(client, message):
 async def callback_handler(client, callback_query):
     try:
         message = callback_query.message
-        selected_language = callback_query.data
-        logger.info(f'User selected language: {selected_language}')
+        callback_data = callback_query.data
+        selected_language, crunchyroll_link = callback_data.split('|')
+        logger.info(f'User selected language: {selected_language} for link: {crunchyroll_link}')
 
         await message.delete()
-        language_option = "" if selected_language == "all" else selected_language
+
+        if selected_language == "all":
+            language_option = ""
+        else:
+            language_option = selected_language
 
         await callback_query.message.reply("Ripping process started...")
-        crunchyroll_link = callback_query.message.reply_to_message.text.split('/rip', 1)[1].strip()
         ripped_video = await execute_crunchy_command(crunchyroll_link, callback_query.message, language_option)
 
         if ripped_video:
