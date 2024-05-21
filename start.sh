@@ -1,5 +1,7 @@
 #!/bin/bash
 
+git clone https://github.com/BalaPriyanB/crunchy && cd crunchy
+
 # Update package list and install necessary packages
 apt -qq update && apt -qq install -y ffmpeg mediainfo build-essential
 
